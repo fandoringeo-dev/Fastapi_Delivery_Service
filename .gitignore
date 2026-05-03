@@ -1,0 +1,5 @@
+*.txt
+.poetry/
+.venv/
+*.log
+logs/
