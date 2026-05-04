@@ -1,5 +1,9 @@
+import os
+
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+ENV_FILE = os.getenv("ENV_FILE", "env_files/.env")
 
 
 class Settings(BaseSettings):
@@ -26,7 +30,7 @@ class Settings(BaseSettings):
     mongodb_db: str
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=ENV_FILE,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",

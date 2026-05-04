@@ -2,10 +2,11 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, ForeignKey, Numeric, String, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Numeric, String, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.common.enums import ParcelStatus
 from app.db.base import Base
 from app.models.parcel_type import ParcelType
 
@@ -22,6 +23,9 @@ class Parcel(Base):
         String(255), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[ParcelStatus] = mapped_column(
+        Enum(ParcelStatus), nullable=False, default=ParcelStatus.PENDING
+    )
     weight_kg: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
     type_id: Mapped[int] = mapped_column(
         ForeignKey("parcel_types.id", ondelete="RESTRICT"),
