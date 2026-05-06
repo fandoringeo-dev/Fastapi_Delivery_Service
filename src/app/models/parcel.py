@@ -24,7 +24,7 @@ class Parcel(Base):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[ParcelStatus] = mapped_column(
-        Enum(ParcelStatus), nullable=False, default=ParcelStatus.PENDING
+        Enum(ParcelStatus), nullable=False, default=ParcelStatus.PENDING.value
     )
     weight_kg: Mapped[Decimal] = mapped_column(Numeric(10, 3), nullable=False)
     type_id: Mapped[int] = mapped_column(

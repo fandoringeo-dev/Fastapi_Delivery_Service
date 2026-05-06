@@ -12,5 +12,6 @@ RUN uv sync --frozen
 
 COPY . .
 RUN chmod +x /app/docker/entrypoint.sh
+RUN chmod +x /app/docker/worker-entrypoint.sh
 
 EXPOSE 8000

@@ -31,7 +31,7 @@ def upgrade() -> None:
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('client_session_id', sa.String(length=255), nullable=False),
     sa.Column('name', sa.String(length=255), nullable=False),
-    sa.Column('status', sa.Enum('pending', 'processed', 'failed', name='parcelstatus'), nullable=False),
+    sa.Column('status', sa.Enum('PENDING', 'PROCESSED', 'FAILED', name='parcelstatus'), nullable=False),
     sa.Column('weight_kg', sa.Numeric(precision=10, scale=3), nullable=False),
     sa.Column('type_id', sa.Integer(), nullable=False),
     sa.Column('declared_value_usd', sa.Numeric(precision=12, scale=2), nullable=False),

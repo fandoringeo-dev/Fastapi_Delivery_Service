@@ -5,10 +5,12 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.common.enums import ParcelStatus
+from app.schemas.parcel_type import ParcelTypeResponse
 
 
 class ParcelCreateRequest(BaseModel):
     """
+    POST_Request.
     Схема запроса на регистрацию посылки.
     """
 
@@ -18,46 +20,44 @@ class ParcelCreateRequest(BaseModel):
     declared_value_usd: Decimal = Field(gt=0)
 
 
-class ParcelResponse(BaseModel):
+class ParcelCreateResponse(BaseModel):
     """
-    Схема детального ответа по посылке.
+    POST_Response.
+    Схема ответа на запрос создания посылки.
     """
 
+    id: UUID
+    status: ParcelStatus
+
     model_config = ConfigDict(from_attributes=True)
+
+
+class ParcelItemResponse(BaseModel):
+    """
+    GET_Response.
+    Схема ответа с данными о посылке.
+    """
 
     id: UUID
     name: str
     status: ParcelStatus
     weight_kg: Decimal
-    type_id: int
-    type_name: str
+    parcel_type: ParcelTypeResponse
     declared_value_usd: Decimal
     delivery_cost_rub: Decimal | None
     company_id: int | None
     created_at: datetime
-    updated_at: datetime
 
-
-class ParcelListItemResponse(BaseModel):
-    """
-    Схема элемента списка посылок.
-    """
-
-    id: UUID
-    name: str
-    status: ParcelStatus
-    type_id: int
-    type_name: str
-    delivery_cost_rub: Decimal | None
-    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ParcelListResponse(BaseModel):
     """
+    GET_Response.
     Схема ответа со списком посылок и пагинацией.
     """
 
-    items: list[ParcelListItemResponse]
+    items: list[ParcelItemResponse]
     page: int
     page_size: int
     total: int
@@ -72,3 +72,12 @@ class ParcelListQueryParams(BaseModel):
     page_size: int = Field(default=10, ge=1, le=100)
     type_id: int | None = Field(default=None, gt=0)
     has_delivery_cost: bool | None = None
+
+
+class ParcelAssignCompanyRequest(BaseModel):
+    """
+    POST_Request.
+    Схема запроса на привязку транспортной компании к посылке.
+    """
+
+    company_id: int = Field(gt=0, description="Идентификатор транспортной компании.")

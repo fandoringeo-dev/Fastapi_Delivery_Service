@@ -10,6 +10,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "fastapi>=0.136.1",
     "httpx>=0.28.1",
+    "loguru>=0.7.3",
     "psycopg[binary]>=3.3.4",
     "pydantic-settings>=2.14.0",
     "pymongo>=4.17.0",
@@ -34,6 +35,13 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/app/api/v1/routers/*.py" = ["B008"]
+"src/app/core/logging.py" = ["E501"]
+"src/app/workers/parcel_worker.py" = ["E501"]
+
+
 
 [tool.ruff.format]
 quote-style = "double"

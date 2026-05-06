@@ -69,7 +69,28 @@ services:
       timeout: 10s
       retries: 5
     restart: unless-stopped
-
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: delivery_worker
+    env_file:
+      - .env
+    entrypoint: ["/app/docker/worker-entrypoint.sh"]
+    working_dir: /app
+    volumes:
+      - ./:/app
+      - app_venv:/app/.venv
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
   mongodb:
     image: mongo:8
     container_name: delivery_mongodb
