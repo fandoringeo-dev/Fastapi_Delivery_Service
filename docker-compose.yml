@@ -105,6 +105,132 @@ services:
       retries: 5
     restart: unless-stopped
 
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.4
+    container_name: delivery_clickhouse
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "clickhouse-client", "--query", "SELECT 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+  clickhouse-init:
+    image: clickhouse/clickhouse-server:25.4
+    container_name: delivery_clickhouse_init
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    volumes:
+      - ./analytics/sql:/init:ro
+    entrypoint:
+      - bash
+      - -c
+      - >
+        clickhouse-client
+        --host clickhouse
+        --user ${CLICKHOUSE_USER}
+        --password ${CLICKHOUSE_PASSWORD}
+        --database ${CLICKHOUSE_DB}
+        --multiquery
+        < /init/init_clickhouse.sql
+  airflow-postgres:
+    image: postgres:17
+    container_name: delivery_airflow_postgres
+    environment:
+      POSTGRES_DB: ${AIRFLOW_POSTGRES_DB}
+      POSTGRES_USER: ${AIRFLOW_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AIRFLOW_POSTGRES_PASSWORD}
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${AIRFLOW_POSTGRES_USER} -d ${AIRFLOW_POSTGRES_DB}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  airflow-init:
+    image: apache/airflow:2.10.5
+    container_name: delivery_airflow_init
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    command:
+      - bash
+      - -c
+      - airflow db migrate && airflow users create --username ${AIRFLOW_ADMIN_USERNAME} --firstname Admin --lastname User --role Admin --email ${AIRFLOW_ADMIN_EMAIL} --password ${AIRFLOW_ADMIN_PASSWORD}
+    volumes:
+      - ./analytics/dags:/opt/airflow/dags
+      - ./analytics/logs:/opt/airflow/logs
+      - ./analytics/plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+
+  airflow-webserver:
+    image: apache/airflow:2.10.5
+    container_name: delivery_airflow_webserver
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    command: airflow webserver
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./analytics/dags:/opt/airflow/dags
+      - ./analytics/logs:/opt/airflow/logs
+      - ./analytics/plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.5
+    container_name: delivery_airflow_scheduler
+    env_file:
+      - .env
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    command: airflow scheduler
+    volumes:
+      - ./analytics/dags:/opt/airflow/dags
+      - ./analytics/logs:/opt/airflow/logs
+      - ./analytics/plugins:/opt/airflow/plugins
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   loki:
     image: grafana/loki:3.0.0
     container_name: delivery_loki
@@ -144,5 +270,7 @@ services:
 volumes:
   postgres_data:
   mongodb_data:
+  clickhouse_data:
+  airflow_postgres_data:
   grafana_data:
   app_venv:
