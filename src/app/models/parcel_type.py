@@ -2,7 +2,6 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.models.parcel import Parcel
 
 
 class ParcelType(Base):

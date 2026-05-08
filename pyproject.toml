@@ -7,7 +7,9 @@ requires-python = ">=3.13"
 dependencies = [
     "aio-pika>=9.6.2",
     "alembic>=1.18.4",
+    "apache-airflow>=3.2.1",
     "asyncpg>=0.31.0",
+    "clickhouse-connect>=0.15.1",
     "fastapi>=0.136.1",
     "httpx>=0.28.1",
     "loguru>=0.7.3",
@@ -40,6 +42,8 @@ select = ["E", "F", "I", "B", "UP"]
 "src/app/api/v1/routers/*.py" = ["B008"]
 "src/app/core/logging.py" = ["E501"]
 "src/app/workers/parcel_worker.py" = ["E501"]
+"src/app/models/parcel.py" = ["F821"]
+"src/app/models/parcel_type.py" = ["F821"]
 
 
 

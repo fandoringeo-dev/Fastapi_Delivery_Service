@@ -8,7 +8,6 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.common.enums import ParcelStatus
 from app.db.base import Base
-from app.models.parcel_type import ParcelType
 
 
 class Parcel(Base):
