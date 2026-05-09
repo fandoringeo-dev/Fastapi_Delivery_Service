@@ -164,7 +164,9 @@ services:
     restart: unless-stopped
 
   airflow-init:
-    image: apache/airflow:2.10.5
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
     container_name: delivery_airflow_init
     env_file:
       - .env
@@ -173,12 +175,14 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      PYTHONPATH: /opt/airflow
     command:
       - bash
       - -c
       - airflow db migrate && airflow users create --username ${AIRFLOW_ADMIN_USERNAME} --firstname Admin --lastname User --role Admin --email ${AIRFLOW_ADMIN_EMAIL} --password ${AIRFLOW_ADMIN_PASSWORD}
     volumes:
       - ./analytics/dags:/opt/airflow/dags
+      - ./analytics:/opt/airflow/analytics
       - ./analytics/logs:/opt/airflow/logs
       - ./analytics/plugins:/opt/airflow/plugins
     depends_on:
@@ -186,7 +190,9 @@ services:
         condition: service_healthy
 
   airflow-webserver:
-    image: apache/airflow:2.10.5
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
     container_name: delivery_airflow_webserver
     env_file:
       - .env
@@ -195,11 +201,13 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      PYTHONPATH: /opt/airflow
     command: airflow webserver
     ports:
       - "8080:8080"
     volumes:
       - ./analytics/dags:/opt/airflow/dags
+      - ./analytics:/opt/airflow/analytics
       - ./analytics/logs:/opt/airflow/logs
       - ./analytics/plugins:/opt/airflow/plugins
     depends_on:
@@ -210,7 +218,9 @@ services:
     restart: unless-stopped
 
   airflow-scheduler:
-    image: apache/airflow:2.10.5
+    build:
+      context: .
+      dockerfile: docker/airflow.Dockerfile
     container_name: delivery_airflow_scheduler
     env_file:
       - .env
@@ -219,9 +229,11 @@ services:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${AIRFLOW_POSTGRES_USER}:${AIRFLOW_POSTGRES_PASSWORD}@airflow-postgres:5432/${AIRFLOW_POSTGRES_DB}
       AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY}
       AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      PYTHONPATH: /opt/airflow
     command: airflow scheduler
     volumes:
       - ./analytics/dags:/opt/airflow/dags
+      - ./analytics:/opt/airflow/analytics
       - ./analytics/logs:/opt/airflow/logs
       - ./analytics/plugins:/opt/airflow/plugins
     depends_on:
@@ -259,10 +271,14 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
     ports:
       - "3000:3000"
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+
     depends_on:
       - loki
     restart: unless-stopped

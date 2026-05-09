@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: clickhouse
+    type: grafana-clickhouse-datasource
+    access: proxy
+    isDefault: false
+    jsonData:
+      host: clickhouse
+      port: 8123
+      protocol: http
+      defaultDatabase: delivery_analytics
+      username: analytics
+    secureJsonData:
+      password: analytics

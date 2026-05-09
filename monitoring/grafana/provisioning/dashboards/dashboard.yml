@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: delivery-analytics
+    orgId: 1
+    folder: Delivery Analytics
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards
