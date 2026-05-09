@@ -1,0 +1,79 @@
+services:
+  postgres_test:
+    image: postgres:17
+    container_name: delivery_postgres_test
+    env_file:
+      - .env.test
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB_TEST}
+      POSTGRES_USER: ${POSTGRES_USER_TEST}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD_TEST}
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER_TEST} -d ${POSTGRES_DB_TEST}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis_test:
+    image: redis:8-alpine
+    container_name: delivery_test_redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq_test:
+    image: rabbitmq:4-management
+    container_name: delivery_test_rabbitmq
+    env_file:
+      - .env.test
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER_TEST}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD_TEST}
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  mongodb_test:
+    image: mongo:8
+    container_name: delivery_test_mongodb
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+
+  tests:
+    image: fastapi_delivery_service/tests:1.0.0
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: delivery_tests
+    env_file:
+      - .env.test
+    working_dir: /app
+    command: uv run pytest
+    volumes:
+      - ./:/app
+      - app_venv:/app/.venv
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+      redis_test:
+        condition: service_healthy
+      rabbitmq_test:
+        condition: service_healthy
+      mongodb_test:
+        condition: service_healthy
+
+volumes:
+  postgres_test_data:
+  app_venv:
+
