@@ -72,15 +72,7 @@
 docker compose up -d --build
 ```
 
-### 2. Накатить аналитические view для ClickHouse
-
-`init_clickhouse.sql` создаёт таблицу автоматически, а представления для Grafana создаются отдельной командой:
-
-```powershell
-Get-Content .\analytics\sql\views.sql | docker compose exec -T clickhouse clickhouse-client --multiquery
-```
-
-### 3. Проверить доступность сервисов
+### 2. Проверить доступность сервисов
 
 - API: `http://localhost:8000`
 - Swagger UI: `http://localhost:8000/docs`
@@ -90,7 +82,7 @@ Get-Content .\analytics\sql\views.sql | docker compose exec -T clickhouse clickh
 - ClickHouse HTTP: `http://localhost:8123`
 - Loki: `http://localhost:3100`
 
-### 4. Учётные данные UI
+### 3. Учётные данные UI
 
 - Airflow:
   - login: `admin`
@@ -186,8 +178,7 @@ docker compose up -d --build
 
 1. дождаться, пока поднимутся `app`, `worker`, `postgres`, `redis`, `rabbitmq`, `mongodb`;
 2. дождаться инициализации `clickhouse-init` и `airflow-init`;
-3. применить `views.sql` в `ClickHouse`;
-4. открыть `Swagger`, `Airflow` и `Grafana`.
+3. открыть `Swagger`, `Airflow` и `Grafana`.
 
 ### Вариант 2. Локальная установка через `uv`
 
@@ -300,12 +291,26 @@ Datasource `loki` подключается к `Grafana` автоматическ
 - тесты логирования расчётов;
 - тесты producer-сервиса RabbitMQ.
 
-Всего в проекте сейчас `64` теста.
+Всего в проекте сейчас `58` тестов.
 
 ### Рекомендуемый запуск тестов в docker-контуре
 
+Поднять тестовый контур:
+
 ```bash
-docker compose -f docker-compose.test.yml up --build tests
+docker compose --env-file .env.test -f docker-compose.test.yml up -d --build
+```
+
+Запустить тесты:
+
+```bash
+docker compose --env-file .env.test -f docker-compose.test.yml run --rm tests
+```
+
+Остановить тестовый контур:
+
+```bash
+docker compose --env-file .env.test -f docker-compose.test.yml down -v
 ```
 
 ### Локальный запуск тестов
@@ -430,6 +435,6 @@ migrations/              миграции Alembic
 
 - Авторизации в проекте нет, доступ к посылкам ограничен cookie-сессией.
 - Регистрация посылки идёт через API, а расчёт стоимости выполняется асинхронно worker'ом.
-- Для аналитики в `Grafana` после первого старта нужно один раз применить `analytics/sql/views.sql`, так как `docker-compose` автоматически создаёт таблицу, но не создаёт `VIEW`.
+- `clickhouse-init` автоматически создаёт и таблицу, и аналитические `VIEW` для Grafana.
 - `Airflow` уже настроен для ручного и планового запуска DAG из UI.
 - `Grafana` datasource и dashboard подхватываются автоматически из provisioning-файлов проекта.
